@@ -8,4 +8,9 @@ add_executable(project src/main.cpp
         header/menu.h
         src/batch.cpp
         header/batch.h
+        header/structures.h
+        header/parser.h
+        src/parser.cpp
+        src/show.cpp
+        header/show.h
 )
