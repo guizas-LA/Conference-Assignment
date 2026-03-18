@@ -57,6 +57,6 @@ void showParameters(const map<string,string> &params) {
     }
 
     for (const auto &p : params) {
-        cout << p.first << "=" << p.second << endl;
+        cout << p.first << " = " << p.second << endl;
     }
 }

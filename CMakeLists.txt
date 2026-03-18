@@ -13,4 +13,6 @@ add_executable(project src/main.cpp
         src/parser.cpp
         src/show.cpp
         header/show.h
+        header/assignment.h
+        src/assignment.cpp
 )

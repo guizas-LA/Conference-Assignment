@@ -2,6 +2,8 @@
 #include "../header/parser.h"
 #include "../header/structures.h"
 #include <iostream>
+
+#include "../header/assignment.h"
 #include "../header/show.h"
 using namespace std;
 
@@ -61,7 +63,16 @@ void menu() {
                     cout << "Load a dataset first!\n";
                 }
                 else {
-                    cout << "(Not implemented yet)\n";
+                    vector<MissingReviews> missing;
+                    primaryAssignments(submissions , reviewers , parameters , missing);
+                    string outputFile;
+                    if (parameters.find("OutputFileName") != parameters.end()) {
+                        outputFile = parameters["OutputFileName"];
+                    }
+                    else {
+                        outputFile = "output.csv";
+                    }
+                    writeAssignments(submissions , reviewers , outputFile , missing);
                 }
                 break;
 
