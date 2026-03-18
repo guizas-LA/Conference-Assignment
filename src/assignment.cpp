@@ -4,6 +4,24 @@
 
 using namespace std;
 
+/**
+ * @brief Assigns reviewers to submissions based on primary domain matching.
+ * 
+ * This function distributes reviewers to submissions by matching their primary
+ * domain. Each submission is assigned at least a minimum number of reviewers
+ * (if possible), while ensuring that no reviewer exceeds the maximum allowed
+ * number of reviews.
+ * 
+ * If a submission cannot receive the required number of reviewers, it is
+ * recorded in the missing reviews list.
+ * 
+ * @param subs Vector of submissions to be assigned reviewers.
+ * @param revs Vector of available reviewers.
+ * @param params Map containing configuration parameters:
+ *        - "MinReviewsPerSubmission": minimum number of reviewers per submission.
+ *        - "MaxReviewsPerReviewer": maximum number of submissions per reviewer.
+ * @param missing Vector where missing review information will be stored.
+ */
 void primaryAssignments(vector<Submission> &subs , vector<Reviewer> &revs , const map<string,string> &params, vector<MissingReviews> &missing){
     int minReviews = 1;
     int maxReviews = 1;
@@ -48,6 +66,23 @@ void primaryAssignments(vector<Submission> &subs , vector<Reviewer> &revs , cons
     cout << "Assignments generated (Primary Domain only).\n";
 }
 
+/**
+ * @brief Writes reviewer assignments to an output file.
+ * 
+ * This function outputs the assignment results in a structured format:
+ * - Submission-to-reviewer assignments
+ * - Reviewer-to-submission mappings
+ * - Total number of assignments
+ * - Missing review information (if any)
+ * 
+ * It also prints warnings to the console if some submissions did not
+ * receive the required number of reviews.
+ * 
+ * @param subs Vector of submissions with assigned reviewers.
+ * @param revs Vector of reviewers.
+ * @param outputFileName Name of the output file where results will be written.
+ * @param missing Vector containing submissions with missing reviews.
+ */
 void writeAssignments(const vector<Submission> &subs , const vector<Reviewer> &revs , const string &outputFileName, const vector<MissingReviews> &missing) {
     ofstream out(outputFileName);
     if (!out.is_open()) {
