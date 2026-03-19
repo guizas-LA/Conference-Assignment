@@ -15,4 +15,6 @@ add_executable(project src/main.cpp
         header/show.h
         header/assignment.h
         src/assignment.cpp
+        header/maxflow.h
+        src/maxflow.cpp
 )

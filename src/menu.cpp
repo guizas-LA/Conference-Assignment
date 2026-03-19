@@ -108,16 +108,15 @@ void menu() {
                     cout << "Load a dataset first!\n";
                 }
                 else {
-                    vector<MissingReviews> missing;
-                    primaryAssignments(submissions , reviewers , parameters , missing);
+                    vector<Assignment> assignments;
+                    primaryAssignments(submissions, reviewers, parameters, assignments);
                     string outputFile;
-                    if (parameters.find("OutputFileName") != parameters.end()) {
+                    if (parameters.count("OutputFileName")) {
                         outputFile = parameters["OutputFileName"];
-                    }
-                    else {
+                    } else {
                         outputFile = "output.csv";
                     }
-                    writeAssignments(submissions , reviewers , outputFile , missing);
+                    writeAssignments(assignments, outputFile);
                 }
                 break;
 

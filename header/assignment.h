@@ -17,6 +17,10 @@ struct MissingReviews {
     int domain;       /**< Domain identifier */
     int missing;      /**< Number of missing reviews */
 };
+struct Assignment {
+    int submissionId;
+    int reviewerId;
+};
 
 /**
  * @brief Assigns primary reviewers to submissions.
@@ -29,7 +33,7 @@ struct MissingReviews {
  * @param params Configuration parameters controlling the assignment process.
  * @param missing Output vector storing information about missing reviews.
  */
-void primaryAssignments(vector<Submission> &subs , vector<Reviewer> &revs , const map<string,string> &params, vector<MissingReviews> &missing);
+void primaryAssignments(vector<Submission> &subs,vector<Reviewer> &revs,const map<string,string> &params,vector<Assignment> &assignments);
 
 /**
  * @brief Writes the reviewer assignments to an output file.
@@ -41,7 +45,7 @@ void primaryAssignments(vector<Submission> &subs , vector<Reviewer> &revs , cons
  * @param outputFileName Name of the file where results will be written.
  * @param missing Vector containing information about missing reviews.
  */
-void writeAssignments(const vector<Submission> &subs , const vector<Reviewer> &revs , const string &outputFileName, const vector<MissingReviews> &missing);
+void writeAssignments(const vector<Assignment> &assignments,const string &outputFileName);
 
 
 #endif //PROJECT_ASSIGNMENT_H

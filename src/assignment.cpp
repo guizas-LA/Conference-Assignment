@@ -1,4 +1,5 @@
 #include "../header/assignment.h"
+#include "../header/maxflow.h"
 #include <iostream>
 #include <fstream>
 
@@ -22,48 +23,52 @@ using namespace std;
  *        - "MaxReviewsPerReviewer": maximum number of submissions per reviewer.
  * @param missing Vector where missing review information will be stored.
  */
-void primaryAssignments(vector<Submission> &subs , vector<Reviewer> &revs , const map<string,string> &params, vector<MissingReviews> &missing){
-    int minReviews = 1;
-    int maxReviews = 1;
+void primaryAssignments(vector<Submission> &subs,vector<Reviewer> &revs,const map<string,string> &params,vector<Assignment> &assignments){
 
-    auto itMin = params.find("MinReviewsPerSubmission");
-    if (itMin != params.end()) minReviews = stoi(itMin->second);
+    assignments.clear();
 
-    auto itMax = params.find("MaxReviewsPerReviewer");
-    if (itMax != params.end()) maxReviews = stoi(itMax->second);
+    int minReviews = stoi(params.at("MinReviewsPerSubmission"));
+    int maxReviews = stoi(params.at("MaxReviewsPerReviewer"));
 
-    map<int,int> reviewerLoad;
+    int S = subs.size();
+    int R = revs.size();
 
-    for (const auto &r : revs) reviewerLoad[r.id] = 0;
+    int source = S + R;
+    int sink = S + R + 1;
+    int V = S + R + 2;
 
-    for (auto &s : subs) {
-        vector<int> assigned;
+    vector<vector<int>> capacity(V, vector<int>(V, 0));
+    vector<vector<int>> adj(V);
 
-        for (auto &r : revs) {
-            if (r.primary == s.primary && reviewerLoad[r.id] < maxReviews) {
-                assigned.push_back(r.id);
-                reviewerLoad[r.id]++;
-                if (assigned.size() >= minReviews) break;
+    auto addEdge = [&](int u, int v, int cap) {
+        capacity[u][v] = cap;
+        adj[u].push_back(v);
+        adj[v].push_back(u);
+    };
+    for (int i = 0; i < S; i++) {
+        addEdge(source, i, minReviews);
+    }
+    for (int i = 0; i < S; i++) {
+        for (int j = 0; j < R; j++) {
+            if (subs[i].primary == revs[j].primary) {
+                addEdge(i, S + j, 1);
             }
-        }
-        if (!assigned.empty()) {
-            s.primary = assigned[0];
-            if (assigned.size() > 1) {
-                s.secondary = assigned[1];
-            }
-            else {
-                s.secondary = -1;
-            }
-        }
-        else {
-            s.primary = -1;
-            s.secondary = -1;
-        }
-        if (assigned.size() < minReviews) {
-            missing.push_back({s.id, s.primary, minReviews - (int)assigned.size()});
         }
     }
-    cout << "Assignments generated (Primary Domain only).\n";
+    for (int j = 0; j < R; j++) {
+        addEdge(S + j, sink, maxReviews);
+    }
+
+    int totalFlow = edmondsKarp(capacity, adj, source, sink);
+
+    for (int i = 0; i < S; i++) {
+        for (int j = 0; j < R; j++) {
+            if (capacity[i][S + j] > 0) {
+                assignments.push_back({subs[i].id, revs[j].id});
+            }
+        }
+    }
+    cout << "Assignments generated using MaxFlow.\n";
 }
 
 /**
@@ -83,48 +88,18 @@ void primaryAssignments(vector<Submission> &subs , vector<Reviewer> &revs , cons
  * @param outputFileName Name of the output file where results will be written.
  * @param missing Vector containing submissions with missing reviews.
  */
-void writeAssignments(const vector<Submission> &subs , const vector<Reviewer> &revs , const string &outputFileName, const vector<MissingReviews> &missing) {
+void writeAssignments(const vector<Assignment> &assignments,const string &outputFileName) {
     ofstream out(outputFileName);
-    if (!out.is_open()) {
-        cerr << "Error opening output file: " << outputFileName << endl;
-        return;
-    }
-    int total = 0;
 
-    out << "#SubmissionId,ReviewerId,Match\n";
-    for (const auto &s : subs) {
-        if (s.primary != -1) {
-            out << s.id << "," << s.primary << "," << s.primary << "\n"; total++;
-        }
-        if (s.secondary != -1) {
-            out << s.id << "," << s.secondary << "," << s.primary << "\n"; total++;
-        }
+    out << "#SubmissionId,ReviewerId\n";
+
+    for (const auto &a : assignments) {
+        out << a.submissionId << "," << a.reviewerId << "\n";
     }
 
-    out << "#ReviewerId,SubmissionId,Match\n";
-    for (const auto &r : revs) {
-        for (const auto &s : subs) {
-            if (s.primary == r.id || s.secondary == r.id) {
-                out << r.id << "," << s.id << "," << r.primary << "\n";
-            }
-        }
-    }
+    out << "#Total: " << assignments.size() << "\n";
 
-    out << "#Total: " << total << "\n";
-
-    if (!missing.empty()) {
-        out << "#MissingReviews\n#SubmissionId,Domain,Missing\n";
-        for (const auto &m : missing) {
-            out << m.submissionId << "," << m.domain << "," << m.missing << "\n";
-        }
-    }
     out.close();
-    cout << "Assignments written to " << outputFileName << endl;
 
-    if (!missing.empty()) {
-        cout << "Warning: Some submissions did not reach the minimum number of reviews!\n";
-        for (const auto &m : missing) {
-            cout << "Submission " << m.submissionId << " missing " << m.missing << " reviews.\n";
-        }
-    }
+    cout << "Assignments written to " << outputFileName << endl;
 }
