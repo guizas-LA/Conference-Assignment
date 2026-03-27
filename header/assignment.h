@@ -55,6 +55,8 @@ void primaryAssignments(vector<Submission> &subs,vector<Reviewer> &revs,const ma
 void writeAssignments(const vector<Assignment> &assignments,const string &outputFileName,
                       const vector<MissingReviews> &missing);
 
+string resolveDatasetPath(const string &fileName, const string &folderName);
+
 bool analyzeReviewerRisk(const vector<Submission> &subs,const vector<Reviewer> &revs,
                          const map<string,string> &params,vector<RiskResult> &criticalReviewers);
 

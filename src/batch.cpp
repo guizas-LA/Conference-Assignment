@@ -21,7 +21,7 @@ void batchMode(string inputFile, string riskFile) {
     bool baseFeasible = analyzeReviewerRisk(subs, revs, params, criticalReviewers);
 
     if (!baseFeasible) {
-        ofstream out(riskFile);
+        ofstream out(resolveDatasetPath(riskFile, "risk"));
         if (!out.is_open()) {
             cerr << "Error creating output file.\n";
             return;

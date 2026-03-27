@@ -1,8 +1,10 @@
 #include "../header/parser.h"
+#include <filesystem>
 #include <fstream>
 #include <sstream>
 #include <iostream>
 using namespace std;
+namespace fs = std::filesystem;
 
 string trim(string s) {
     s.erase(0, s.find_first_not_of(" \t\r\n"));
@@ -33,14 +35,37 @@ vector<string> split(const string &line, char delimiter) {
 }
 
 bool readFile(const string &filename,vector<Submission> &submissions,vector<Reviewer> &reviewers,map<string, string> &parameters) {
-    ifstream file("data/" + filename + ".csv");
+    fs::path requested(filename);
+    if (!requested.has_extension()) {
+        requested += ".csv";
+    }
 
-    if (!file.is_open()) {
-        file.open("../data/" + filename + ".csv");
+    vector<fs::path> candidates;
+    fs::path current = fs::current_path();
+
+    if (requested.is_absolute()) {
+        candidates.push_back(requested);
+    }
+    else {
+        candidates.push_back(current / requested);
+        candidates.push_back(current / "dataset" / "input" / requested);
+        candidates.push_back(current / "dataset" / requested);
+        candidates.push_back(current.parent_path() / requested);
+        candidates.push_back(current.parent_path() / "dataset" / "input" / requested);
+        candidates.push_back(current.parent_path() / "dataset" / requested);
+    }
+
+    ifstream file;
+    for (const auto &candidate : candidates) {
+        file.open(candidate);
+        if (file.is_open()) {
+            break;
+        }
+        file.clear();
     }
 
     if (!file.is_open()) {
-        cerr << "Error opening file.\n";
+        cerr << "Error opening file: " << requested.string() << "\n";
         return false;
     }
 

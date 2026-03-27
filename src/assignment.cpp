@@ -8,36 +8,47 @@
 using namespace std;
 namespace fs = std::filesystem;
 
-static fs::path resolveOutputPath(const string &outputFileName) {
-    fs::path outputPath(outputFileName);
-    if (outputPath.is_absolute()) {
-        return outputPath;
+string resolveDatasetPath(const string &fileName, const string &folderName) {
+    fs::path path(fileName);
+    if (path.is_absolute()) {
+        return path.string();
     }
 
     fs::path current = fs::current_path();
-    if (fs::exists(current / "data")) {
-        return current / outputPath;
+    fs::path currentDataset = current / "dataset";
+    fs::path parentDataset = current.parent_path() / "dataset";
+
+    if (fs::exists(currentDataset / folderName)) {
+        return (currentDataset / folderName / path).string();
     }
 
-    if (fs::exists(current.parent_path() / "data")) {
-        return current.parent_path() / outputPath;
+    if (fs::exists(parentDataset / folderName)) {
+        return (parentDataset / folderName / path).string();
     }
 
-    return current / outputPath;
+    if (fs::exists(currentDataset)) {
+        return (currentDataset / path).string();
+    }
+
+    if (fs::exists(parentDataset)) {
+        return (parentDataset / path).string();
+    }
+
+    return (current / path).string();
 }
 
 static int solvePrimaryFlow(const vector<Submission> &subs,const vector<Reviewer> &revs,
                             int minReviews,int maxReviews,int excludedReviewerIndex,
                             vector<Assignment> *assignments,vector<MissingReviews> *missing) {
-    int S = subs.size();
-    int R = revs.size();
+    int submissionCount = subs.size();
+    int reviewerCount = revs.size();
 
-    int source = S + R;
-    int sink = S + R + 1;
-    int V = S + R + 2;
+    int source = submissionCount + reviewerCount;
+    int sink = submissionCount + reviewerCount + 1;
+    int nodeCount = submissionCount + reviewerCount + 2;
 
-    vector<vector<int>> capacity(V, vector<int>(V, 0));
-    vector<vector<int>> adj(V);
+    vector<vector<int>> capacity(nodeCount, vector<int>(nodeCount, 0));
+    vector<vector<int>> adj(nodeCount);
 
     auto addEdge = [&](int u, int v, int cap) {
         capacity[u][v] = cap;
@@ -45,22 +56,22 @@ static int solvePrimaryFlow(const vector<Submission> &subs,const vector<Reviewer
         adj[v].push_back(u);
     };
 
-    for (int i = 0; i < S; i++) {
+    for (int i = 0; i < submissionCount; i++) {
         addEdge(source, i, minReviews);
     }
 
-    for (int i = 0; i < S; i++) {
-        for (int j = 0; j < R; j++) {
+    for (int i = 0; i < submissionCount; i++) {
+        for (int j = 0; j < reviewerCount; j++) {
             if (j == excludedReviewerIndex) continue;
             if (subs[i].primary == revs[j].primary) {
-                addEdge(i, S + j, 1);
+                addEdge(i, submissionCount + j, 1);
             }
         }
     }
 
-    for (int j = 0; j < R; j++) {
+    for (int j = 0; j < reviewerCount; j++) {
         if (j == excludedReviewerIndex) continue;
-        addEdge(S + j, sink, maxReviews);
+        addEdge(submissionCount + j, sink, maxReviews);
     }
 
     int totalFlow = edmondsKarp(capacity, adj, source, sink);
@@ -68,12 +79,12 @@ static int solvePrimaryFlow(const vector<Submission> &subs,const vector<Reviewer
     if (assignments != nullptr) assignments->clear();
     if (missing != nullptr) missing->clear();
 
-    for (int i = 0; i < S; i++) {
+    for (int i = 0; i < submissionCount; i++) {
         int assignedToSubmission = 0;
-        for (int j = 0; j < R; j++) {
+        for (int j = 0; j < reviewerCount; j++) {
             if (j == excludedReviewerIndex) continue;
-            if (capacity[i][S + j] > 0) {
-                assignedToSubmission += capacity[i][S + j];
+            if (capacity[i][submissionCount + j] > 0) {
+                assignedToSubmission += capacity[i][submissionCount + j];
                 if (assignments != nullptr) {
                     assignments->push_back({subs[i].id, revs[j].id, subs[i].primary});
                 }
@@ -88,25 +99,6 @@ static int solvePrimaryFlow(const vector<Submission> &subs,const vector<Reviewer
     return totalFlow;
 }
 
-/**
- * @brief Assigns reviewers to submissions based on primary domain matching.
- * 
- * This function distributes reviewers to submissions by matching their primary
- * domain. Each submission is assigned at least a minimum number of reviewers
- * (if possible), while ensuring that no reviewer exceeds the maximum allowed
- * number of reviews.
- * 
- * If a submission cannot receive the required number of reviewers, it is
- * recorded in the missing reviews list.
- * 
- * @param subs Vector of submissions to be assigned reviewers.
- * @param revs Vector of available reviewers.
- * @param params Map containing configuration parameters:
- *        - "MinReviewsPerSubmission": minimum number of reviewers per submission.
- *        - "MaxReviewsPerReviewer": maximum number of submissions per reviewer.
- * @param assignments Vector where the generated assignments will be stored.
- * @param missing Vector where missing review information will be stored.
- */
 void primaryAssignments(vector<Submission> &subs,vector<Reviewer> &revs,const map<string,string> &params,
                         vector<Assignment> &assignments,vector<MissingReviews> &missing) {
     assignments.clear();
@@ -122,24 +114,9 @@ void primaryAssignments(vector<Submission> &subs,vector<Reviewer> &revs,const ma
     }
 }
 
-/**
- * @brief Writes reviewer assignments to an output file.
- * 
- * This function outputs the assignment results in a structured format:
- * - Submission-to-reviewer assignments
- * - Reviewer-to-submission mappings
- * - Total number of assignments
- * - Missing review information (if any)
- * 
- * It also prints warnings to the console if some submissions did not
- * receive the required number of reviews.
- * 
- * @param outputFileName Name of the output file where results will be written.
- * @param missing Vector containing submissions with missing reviews.
- */
 void writeAssignments(const vector<Assignment> &assignments,const string &outputFileName,
                       const vector<MissingReviews> &missing) {
-    fs::path resolvedOutputPath = resolveOutputPath(outputFileName);
+    fs::path resolvedOutputPath(resolveDatasetPath(outputFileName, "output"));
     ofstream out(resolvedOutputPath);
 
     if (!out.is_open()) {
@@ -210,7 +187,7 @@ bool analyzeReviewerRisk(const vector<Submission> &subs,const vector<Reviewer> &
 }
 
 void writeRiskAnalysis(const vector<RiskResult> &criticalReviewers,const string &outputFileName) {
-    fs::path resolvedOutputPath = resolveOutputPath(outputFileName);
+    fs::path resolvedOutputPath(resolveDatasetPath(outputFileName, "risk"));
     ofstream out(resolvedOutputPath);
 
     if (!out.is_open()) {

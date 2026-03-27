@@ -3,12 +3,12 @@
 #include <climits>
 
 int edmondsKarp(vector<vector<int>> &capacity,vector<vector<int>> &adj,int source,int sink) {
-    int v = capacity.size();
-    vector<vector<int>> flow(v , vector<int>(v,0));
+    int nodeCount = capacity.size();
+    vector<vector<int>> flow(nodeCount, vector<int>(nodeCount, 0));
     int maxFlow = 0;
 
     while (true) {
-        vector<int> parent(v, -1);
+        vector<int> parent(nodeCount, -1);
         queue<int> q;
         q.push(source);
         parent[source] = source;

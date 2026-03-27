@@ -2,17 +2,6 @@
 #include <iostream>
 using namespace std;
 
-/**
- * @brief Displays all submissions.
- * 
- * This function prints a formatted list of all submissions,
- * including their ID, title, authors, email, and assigned
- * primary and secondary reviewers.
- * 
- * If no submissions are available, a message is displayed.
- * 
- * @param subs Vector containing all submissions.
- */
 void showSubmissions(const vector<Submission> &subs) {
     cout << "=======================================\n";
     cout << "|              Submissions            |\n";
@@ -34,17 +23,6 @@ void showSubmissions(const vector<Submission> &subs) {
     }
 }
 
-/**
- * @brief Displays all reviewers.
- * 
- * This function prints a formatted list of all reviewers,
- * including their ID, name, email, and primary and secondary
- * expertise domains.
- * 
- * If no reviewers are available, a message is displayed.
- * 
- * @param revs Vector containing all reviewers.
- */
 void showReviewers(const vector<Reviewer> &revs) {
     cout << "=======================================\n";
     cout << "|               Reviewers             |\n";
@@ -65,16 +43,6 @@ void showReviewers(const vector<Reviewer> &revs) {
     }
 }
 
-/**
- * @brief Displays all configuration parameters.
- * 
- * This function prints all key-value pairs representing
- * configuration parameters used in the system.
- * 
- * If no parameters are available, a message is displayed.
- * 
- * @param params Map containing parameter names and values.
- */
 void showParameters(const map<string,string> &params) {
     cout << "=======================================\n";
     cout << "|              Parameters             |\n";
