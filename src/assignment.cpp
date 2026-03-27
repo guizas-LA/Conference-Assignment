@@ -6,6 +6,28 @@
 
 using namespace std;
 
+/**
+ * @brief Solves the primary domain flow problem using Edmonds-Karp.
+ * 
+ * Constructs a flow network where:
+ * - Source connects to submissions with capacity = MinReviewsPerSubmission
+ * - Submissions connect to reviewers if primary domain matches (capacity = 1)
+ * - Reviewers connect to sink with capacity = MaxReviewsPerReviewer
+ * 
+ * Optionally excludes a specific reviewer (for risk analysis).
+ * 
+ * @param subs Vector of submissions.
+ * @param revs Vector of reviewers.
+ * @param minReviews Minimum reviews per submission.
+ * @param maxReviews Maximum reviews per reviewer.
+ * @param excludedReviewerIndex Index of reviewer to exclude (-1 for none).
+ * @param assignments Pointer to output vector for assignments (nullptr to skip).
+ * @param missing Pointer to output vector for missing reviews (nullptr to skip).
+ * @return Total flow value achieved.
+ * 
+ * @note Time Complexity: O(V*E^2) where V = S+R+2 and E ≈ S*R, so O((S*R)^2 * (S+R)).
+ *       Space Complexity: O((S+R)^2) for capacity and flow matrices.
+ */
 static int solvePrimaryFlow(const vector<Submission> &subs,const vector<Reviewer> &revs,
                             int minReviews,int maxReviews,int excludedReviewerIndex,
                             vector<Assignment> *assignments,vector<MissingReviews> *missing) {
@@ -153,6 +175,21 @@ void writeAssignments(const vector<Assignment> &assignments,const string &output
     cout << "Assignments written to " << outputFileName << endl;
 }
 
+/**
+ * @brief Analyzes which reviewers are critical to the assignment's feasibility (Risk Analysis = 1).
+ * 
+ * Determines which individual reviewers, if they fail to complete their reviews,
+ * would make it impossible to satisfy the minimum reviews per submission requirement.
+ * 
+ * @param subs Vector of submissions.
+ * @param revs Vector of reviewers.
+ * @param params Map containing MinReviewsPerSubmission and MaxReviewsPerReviewer.
+ * @param criticalReviewers Output vector of reviewers whose absence breaks the assignment.
+ * @return true if base assignment is feasible, false otherwise.
+ * 
+ * @note Time Complexity: O(R * V*E^2) where R is number of reviewers.
+ *       For each reviewer, runs full max flow algorithm, so roughly O(R * (S*R)^2 * (S+R)).
+ */
 bool analyzeReviewerRisk(const vector<Submission> &subs,const vector<Reviewer> &revs,
                          const map<string,string> &params,vector<RiskResult> &criticalReviewers) {
     criticalReviewers.clear();
@@ -188,6 +225,17 @@ bool analyzeReviewerRisk(const vector<Submission> &subs,const vector<Reviewer> &
     return true;
 }
 
+/**
+ * @brief Writes risk analysis results to an output file.
+ * 
+ * Outputs the list of critical reviewers whose absence would break the assignment,
+ * including details about which submissions would be affected and missing reviews.
+ * 
+ * @param criticalReviewers Vector of reviewers critical to assignment feasibility.
+ * @param outputFileName Name of the output file.
+ * 
+ * @note Time Complexity: O(CR) where C is number of critical reviewers and R is number of affected submissions.
+ */
 void writeRiskAnalysis(const vector<RiskResult> &criticalReviewers,const string &outputFileName) {
     ofstream out(outputFileName);
 

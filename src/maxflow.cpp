@@ -1,7 +1,26 @@
+/**
+ * @file maxflow.cpp
+ * @brief Implementation of maximum flow algorithm (Edmonds-Karp).
+ * @author Conference Organization System
+ */
+
 #include "../header/maxflow.h"
 #include <queue>
 #include <climits>
 
+/**
+ * @brief Edmonds-Karp Maximum Flow Algorithm Implementation.
+ * 
+ * Computes maximum flow using BFS-based Ford-Fulkerson method.
+ * Time Complexity: O(V*E^2) where V is vertices and E is edges.
+ * Space Complexity: O(V^2) for matrices.
+ * 
+ * @param capacity Flow capacity matrix (modified to store residual flow).
+ * @param adj Adjacency list of the flow network.
+ * @param source Source node index.
+ * @param sink Sink node index.
+ * @return Maximum flow value from source to sink.
+ */
 int edmondsKarp(vector<vector<int>> &capacity,vector<vector<int>> &adj,int source,int sink) {
     int v = capacity.size();
     vector<vector<int>> flow(v , vector<int>(v,0));

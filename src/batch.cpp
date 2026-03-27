@@ -1,3 +1,9 @@
+/**
+ * @file batch.cpp
+ * @brief Batch mode implementation for automated processing.
+ * @author Conference Organization System
+ */
+
 #include "../header/batch.h"
 #include "../header/parser.h"
 #include "../header/assignment.h"

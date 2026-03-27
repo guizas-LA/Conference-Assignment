@@ -1,15 +1,35 @@
+/**
+ * @file parser.cpp
+ * @brief Implementation of CSV file parsing for conference data.
+ * @author Conference Organization System
+ */
+
 #include "../header/parser.h"
 #include <fstream>
 #include <sstream>
 #include <iostream>
 using namespace std;
 
+/**
+ * @brief Trims leading and trailing whitespace from a string.
+ * 
+ * @param s Input string.
+ * @return String with leading/trailing whitespace removed.
+ * @note Time Complexity: O(n) where n is the string length.
+ */
 string trim(string s) {
     s.erase(0, s.find_first_not_of(" \t\r\n"));
     s.erase(s.find_last_not_of(" \t\r\n") + 1);
     return s;
 }
 
+/**
+ * @brief Removes surrounding quote characters from a string.
+ * 
+ * @param s Input string.
+ * @return String with surrounding quotes removed if present.
+ * @note Time Complexity: O(n) where n is the string length.
+ */
 static string stripQuotes(string s) {
     s = trim(s);
     if (s.size() >= 2 && s.front() == '"' && s.back() == '"') {
@@ -18,6 +38,14 @@ static string stripQuotes(string s) {
     return s;
 }
 
+/**
+ * @brief Splits a string by a delimiter character.
+ * 
+ * @param line Input string to split.
+ * @param delimiter Character to split on.
+ * @return Vector of substrings with whitespace trimmed.
+ * @note Time Complexity: O(n) where n is the line length.
+ */
 vector<string> split(const string &line, char delimiter) {
     vector<string> parts;
     string part;
