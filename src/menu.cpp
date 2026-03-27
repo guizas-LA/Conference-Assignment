@@ -92,15 +92,30 @@ void menu() {
             case 4:
                 showParameters(parameters);
                 break;
-
-            /**
-             * @brief Generates reviewer assignments.
-             * 
-             * Uses primaryAssignments() to assign reviewers and
-             * writeAssignments() to export results to a file.
-             * 
-             * Requires that submissions and reviewers are already loaded.
-             */
+                /**
+            * @brief Generates reviewer assignments for submissions and writes them to a file.
+            *
+            * This case handles the creation of assignment mappings between submissions
+            * and reviewers. It first checks whether the required datasets (submissions
+            * and reviewers) are loaded. If not, it notifies the user.
+            *
+            * If the datasets are available:
+            * - Initializes a vector of Assignment objects.
+            * - Calls primaryAssignments() to generate the assignment mappings based on
+            *   the given parameters.
+            * - Determines the output file name:
+            *   - Uses the "OutputFileName" parameter if provided.
+            *   - Defaults to "output.csv" otherwise.
+            * - Writes the generated assignments to the specified file using writeAssignments().
+            *
+            * @note Requires submissions and reviewers to be non-empty.
+            *
+            * @warning If no dataset is loaded, assignment generation will not proceed.
+            *
+            * @see primaryAssignments()
+            * @see writeAssignments()
+            */
+            
             case 5:
                 cout << "\nGenerating assignments...\n";
 
