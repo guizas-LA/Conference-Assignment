@@ -4,10 +4,17 @@
 #include <iostream>
 using namespace std;
 
-
 string trim(string s) {
     s.erase(0, s.find_first_not_of(" \t\r\n"));
     s.erase(s.find_last_not_of(" \t\r\n") + 1);
+    return s;
+}
+
+static string stripQuotes(string s) {
+    s = trim(s);
+    if (s.size() >= 2 && s.front() == '"' && s.back() == '"') {
+        return s.substr(1, s.size() - 2);
+    }
     return s;
 }
 
@@ -26,7 +33,11 @@ vector<string> split(const string &line, char delimiter) {
 }
 
 bool readFile(const string &filename,vector<Submission> &submissions,vector<Reviewer> &reviewers,map<string, string> &parameters) {
-    ifstream file("../data/" + filename + ".csv");
+    ifstream file("data/" + filename + ".csv");
+
+    if (!file.is_open()) {
+        file.open("../data/" + filename + ".csv");
+    }
 
     if (!file.is_open()) {
         cerr << "Error opening file.\n";
@@ -109,7 +120,7 @@ bool readFile(const string &filename,vector<Submission> &submissions,vector<Revi
             else if (section == "parameters") {
 
                 if (parts.size() >= 2) {
-                    parameters[parts[0]] = parts[1];
+                    parameters[parts[0]] = stripQuotes(parts[1]);
                 }
             }
         }

@@ -1,5 +1,6 @@
 #include "../header/batch.h"
 #include "../header/parser.h"
+#include "../header/assignment.h"
 #include "../header/structures.h"
 #include <iostream>
 #include <fstream>
@@ -16,18 +17,22 @@ void batchMode(string inputFile, string riskFile) {
         return;
     }
 
-    ofstream out(riskFile);
+    vector<RiskResult> criticalReviewers;
+    bool baseFeasible = analyzeReviewerRisk(subs, revs, params, criticalReviewers);
 
-    if (!out.is_open()) {
-        cerr << "Error creating output file.\n";
+    if (!baseFeasible) {
+        ofstream out(riskFile);
+        if (!out.is_open()) {
+            cerr << "Error creating output file.\n";
+            return;
+        }
+
+        out << "#BaseAssignmentInfeasible\n";
+        out.close();
+        cout << "Batch completed.\n";
         return;
     }
 
-    out << "#Batch executed\n";
-    out << "Submissions: " << subs.size() << "\n";
-    out << "Reviewers: " << revs.size() << "\n";
-
-    out.close();
-
+    writeRiskAnalysis(criticalReviewers, riskFile);
     cout << "Batch completed.\n";
 }

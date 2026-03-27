@@ -1,0 +1,23 @@
+#Submissions
+#Id, Title, Authors,E-mail,Primary,Secondary
+101, "Flow Networks for Reviewing", Alice, alice@example.com, 1,
+102, "Matching Under Constraints", Bob, bob@example.com, 1,
+103, "Critical Capacity Analysis", Carol, carol@example.com, 2,
+#
+#Reviewers
+#Id, Name, E-mail,Primary,Secondary
+1, Reviewer One, r1@example.com, 1,
+2, Reviewer Two, r2@example.com, 1,
+3, Reviewer Three, r3@example.com, 2,
+4, Reviewer Four, r4@example.com, 2,
+#Parameters
+MinReviewsPerSubmission, 2
+MaxReviewsPerReviewer, 2
+PrimaryReviewerExpertise, 1
+SecondaryReviewerExpertise, 0
+PrimarySubmissionDomain, 1
+SecondarySubmissionDomain, 1
+#Control
+GenerateAssignments, 1
+RiskAnalysis, 1
+OutputFileName, "risk_example_output.csv"
