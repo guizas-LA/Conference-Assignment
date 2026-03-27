@@ -2,8 +2,71 @@
 #include "../header/maxflow.h"
 #include <iostream>
 #include <fstream>
+#include <algorithm>
 
 using namespace std;
+
+static int solvePrimaryFlow(const vector<Submission> &subs,const vector<Reviewer> &revs,
+                            int minReviews,int maxReviews,int excludedReviewerIndex,
+                            vector<Assignment> *assignments,vector<MissingReviews> *missing) {
+    int S = subs.size();
+    int R = revs.size();
+
+    int source = S + R;
+    int sink = S + R + 1;
+    int V = S + R + 2;
+
+    vector<vector<int>> capacity(V, vector<int>(V, 0));
+    vector<vector<int>> adj(V);
+
+    auto addEdge = [&](int u, int v, int cap) {
+        capacity[u][v] = cap;
+        adj[u].push_back(v);
+        adj[v].push_back(u);
+    };
+
+    for (int i = 0; i < S; i++) {
+        addEdge(source, i, minReviews);
+    }
+
+    for (int i = 0; i < S; i++) {
+        for (int j = 0; j < R; j++) {
+            if (j == excludedReviewerIndex) continue;
+            if (subs[i].primary == revs[j].primary) {
+                addEdge(i, S + j, 1);
+            }
+        }
+    }
+
+    for (int j = 0; j < R; j++) {
+        if (j == excludedReviewerIndex) continue;
+        addEdge(S + j, sink, maxReviews);
+    }
+
+    int totalFlow = edmondsKarp(capacity, adj, source, sink);
+
+    if (assignments != nullptr) assignments->clear();
+    if (missing != nullptr) missing->clear();
+
+    for (int i = 0; i < S; i++) {
+        int assignedToSubmission = 0;
+        for (int j = 0; j < R; j++) {
+            if (j == excludedReviewerIndex) continue;
+            if (capacity[i][S + j] > 0) {
+                assignedToSubmission += capacity[i][S + j];
+                if (assignments != nullptr) {
+                    assignments->push_back({subs[i].id, revs[j].id, subs[i].primary});
+                }
+            }
+        }
+
+        if (missing != nullptr && assignedToSubmission < minReviews) {
+            missing->push_back({subs[i].id, subs[i].primary, minReviews - assignedToSubmission});
+        }
+    }
+
+    return totalFlow;
+}
 
 /**
  * @brief Assigns reviewers to submissions based on primary domain matching.
@@ -31,52 +94,7 @@ void primaryAssignments(vector<Submission> &subs,vector<Reviewer> &revs,const ma
 
     int minReviews = stoi(params.at("MinReviewsPerSubmission"));
     int maxReviews = stoi(params.at("MaxReviewsPerReviewer"));
-
-    int S = subs.size();
-    int R = revs.size();
-
-    int source = S + R;
-    int sink = S + R + 1;
-    int V = S + R + 2;
-
-    vector<vector<int>> capacity(V, vector<int>(V, 0));
-    vector<vector<int>> adj(V);
-
-    auto addEdge = [&](int u, int v, int cap) {
-        capacity[u][v] = cap;
-        adj[u].push_back(v);
-        adj[v].push_back(u);
-    };
-    for (int i = 0; i < S; i++) {
-        addEdge(source, i, minReviews);
-    }
-    for (int i = 0; i < S; i++) {
-        for (int j = 0; j < R; j++) {
-            if (subs[i].primary == revs[j].primary) {
-                addEdge(i, S + j, 1);
-            }
-        }
-    }
-    for (int j = 0; j < R; j++) {
-        addEdge(S + j, sink, maxReviews);
-    }
-
-    int totalFlow = edmondsKarp(capacity, adj, source, sink);
-    (void) totalFlow;
-
-    for (int i = 0; i < S; i++) {
-        int assignedToSubmission = 0;
-        for (int j = 0; j < R; j++) {
-            if (capacity[i][S + j] > 0) {
-                assignments.push_back({subs[i].id, revs[j].id, subs[i].primary});
-                assignedToSubmission += capacity[i][S + j];
-            }
-        }
-
-        if (assignedToSubmission < minReviews) {
-            missing.push_back({subs[i].id, subs[i].primary, minReviews - assignedToSubmission});
-        }
-    }
+    solvePrimaryFlow(subs, revs, minReviews, maxReviews, -1, &assignments, &missing);
 
     cout << "Assignments generated using MaxFlow.\n";
     if (!missing.empty()) {
@@ -133,4 +151,65 @@ void writeAssignments(const vector<Assignment> &assignments,const string &output
     out.close();
 
     cout << "Assignments written to " << outputFileName << endl;
+}
+
+bool analyzeReviewerRisk(const vector<Submission> &subs,const vector<Reviewer> &revs,
+                         const map<string,string> &params,vector<RiskResult> &criticalReviewers) {
+    criticalReviewers.clear();
+
+    int minReviews = stoi(params.at("MinReviewsPerSubmission"));
+    int maxReviews = stoi(params.at("MaxReviewsPerReviewer"));
+    int requiredFlow = static_cast<int>(subs.size()) * minReviews;
+
+    vector<Assignment> baselineAssignments;
+    vector<MissingReviews> baselineMissing;
+    int baselineFlow = solvePrimaryFlow(subs, revs, minReviews, maxReviews, -1,
+                                        &baselineAssignments, &baselineMissing);
+
+    if (baselineFlow < requiredFlow) {
+        return false;
+    }
+
+    for (int reviewerIndex = 0; reviewerIndex < static_cast<int>(revs.size()); reviewerIndex++) {
+        vector<MissingReviews> missing;
+        int flowWithoutReviewer = solvePrimaryFlow(subs, revs, minReviews, maxReviews, reviewerIndex,
+                                                   nullptr, &missing);
+
+        if (flowWithoutReviewer < requiredFlow) {
+            criticalReviewers.push_back({revs[reviewerIndex].id, missing});
+        }
+    }
+
+    sort(criticalReviewers.begin(), criticalReviewers.end(),
+         [](const RiskResult &lhs, const RiskResult &rhs) {
+             return lhs.reviewerId < rhs.reviewerId;
+         });
+
+    return true;
+}
+
+void writeRiskAnalysis(const vector<RiskResult> &criticalReviewers,const string &outputFileName) {
+    ofstream out(outputFileName);
+
+    if (!out.is_open()) {
+        cerr << "Error opening risk output file: " << outputFileName << "\n";
+        return;
+    }
+
+    out << "#CriticalReviewerId,SubmissionId,Domain,MissingReviews\n";
+
+    if (criticalReviewers.empty()) {
+        out << "#None\n";
+    }
+    else {
+        for (const auto &risk : criticalReviewers) {
+            for (const auto &entry : risk.missing) {
+                out << risk.reviewerId << ", " << entry.submissionId << ", "
+                    << entry.domain << ", " << entry.missing << "\n";
+            }
+        }
+    }
+
+    out.close();
+    cout << "Risk analysis written to " << outputFileName << endl;
 }

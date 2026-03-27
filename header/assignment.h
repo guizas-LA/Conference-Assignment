@@ -23,6 +23,11 @@ struct Assignment {
     int match;
 };
 
+struct RiskResult {
+    int reviewerId;
+    vector<MissingReviews> missing;
+};
+
 /**
  * @brief Assigns primary reviewers to submissions.
  *
@@ -49,6 +54,11 @@ void primaryAssignments(vector<Submission> &subs,vector<Reviewer> &revs,const ma
  */
 void writeAssignments(const vector<Assignment> &assignments,const string &outputFileName,
                       const vector<MissingReviews> &missing);
+
+bool analyzeReviewerRisk(const vector<Submission> &subs,const vector<Reviewer> &revs,
+                         const map<string,string> &params,vector<RiskResult> &criticalReviewers);
+
+void writeRiskAnalysis(const vector<RiskResult> &criticalReviewers,const string &outputFileName);
 
 
 #endif //PROJECT_ASSIGNMENT_H

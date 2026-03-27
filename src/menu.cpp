@@ -132,7 +132,26 @@ void menu() {
                     cout << "Load a dataset first!\n";
                 }
                 else {
-                    cout << "(Not implemented yet)\n";
+                    vector<RiskResult> criticalReviewers;
+                    bool baseFeasible = analyzeReviewerRisk(submissions, reviewers, parameters, criticalReviewers);
+
+                    if (!baseFeasible) {
+                        cout << "Base assignment is already infeasible, so reviewer failure risk is not analyzed.\n";
+                    }
+                    else if (criticalReviewers.empty()) {
+                        cout << "No single reviewer failure makes the assignment infeasible.\n";
+                    }
+                    else {
+                        cout << "Critical reviewers found:\n";
+                        for (const auto &risk : criticalReviewers) {
+                            cout << "Reviewer " << risk.reviewerId << " is critical.\n";
+                            for (const auto &entry : risk.missing) {
+                                cout << "  Submission " << entry.submissionId
+                                     << " would still need " << entry.missing
+                                     << " review(s) in domain " << entry.domain << ".\n";
+                            }
+                        }
+                    }
                 }
                 break;
 
