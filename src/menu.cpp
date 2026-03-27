@@ -2,7 +2,6 @@
 #include "../header/parser.h"
 #include "../header/structures.h"
 #include <iostream>
-
 #include "../header/assignment.h"
 #include "../header/show.h"
 using namespace std;
@@ -109,14 +108,15 @@ void menu() {
                 }
                 else {
                     vector<Assignment> assignments;
-                    primaryAssignments(submissions, reviewers, parameters, assignments);
+                    vector<MissingReviews> missing;
+                    primaryAssignments(submissions, reviewers, parameters, assignments, missing);
                     string outputFile;
                     if (parameters.count("OutputFileName")) {
                         outputFile = parameters["OutputFileName"];
                     } else {
                         outputFile = "output.csv";
                     }
-                    writeAssignments(assignments, outputFile);
+                    writeAssignments(assignments, outputFile, missing);
                 }
                 break;
 

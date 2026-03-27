@@ -21,11 +21,13 @@ using namespace std;
  * @param params Map containing configuration parameters:
  *        - "MinReviewsPerSubmission": minimum number of reviewers per submission.
  *        - "MaxReviewsPerReviewer": maximum number of submissions per reviewer.
+ * @param assignments Vector where the generated assignments will be stored.
  * @param missing Vector where missing review information will be stored.
  */
-void primaryAssignments(vector<Submission> &subs,vector<Reviewer> &revs,const map<string,string> &params,vector<Assignment> &assignments){
-
+void primaryAssignments(vector<Submission> &subs,vector<Reviewer> &revs,const map<string,string> &params,
+                        vector<Assignment> &assignments,vector<MissingReviews> &missing) {
     assignments.clear();
+    missing.clear();
 
     int minReviews = stoi(params.at("MinReviewsPerSubmission"));
     int maxReviews = stoi(params.at("MaxReviewsPerReviewer"));
@@ -60,15 +62,26 @@ void primaryAssignments(vector<Submission> &subs,vector<Reviewer> &revs,const ma
     }
 
     int totalFlow = edmondsKarp(capacity, adj, source, sink);
+    (void) totalFlow;
 
     for (int i = 0; i < S; i++) {
+        int assignedToSubmission = 0;
         for (int j = 0; j < R; j++) {
             if (capacity[i][S + j] > 0) {
-                assignments.push_back({subs[i].id, revs[j].id});
+                assignments.push_back({subs[i].id, revs[j].id, subs[i].primary});
+                assignedToSubmission += capacity[i][S + j];
             }
         }
+
+        if (assignedToSubmission < minReviews) {
+            missing.push_back({subs[i].id, subs[i].primary, minReviews - assignedToSubmission});
+        }
     }
+
     cout << "Assignments generated using MaxFlow.\n";
+    if (!missing.empty()) {
+        cout << "Some submissions could not receive the requested minimum number of reviews.\n";
+    }
 }
 
 /**
@@ -83,21 +96,39 @@ void primaryAssignments(vector<Submission> &subs,vector<Reviewer> &revs,const ma
  * It also prints warnings to the console if some submissions did not
  * receive the required number of reviews.
  * 
- * @param subs Vector of submissions with assigned reviewers.
- * @param revs Vector of reviewers.
  * @param outputFileName Name of the output file where results will be written.
  * @param missing Vector containing submissions with missing reviews.
  */
-void writeAssignments(const vector<Assignment> &assignments,const string &outputFileName) {
+void writeAssignments(const vector<Assignment> &assignments,const string &outputFileName,
+                      const vector<MissingReviews> &missing) {
     ofstream out(outputFileName);
 
-    out << "#SubmissionId,ReviewerId\n";
+    if (!out.is_open()) {
+        cerr << "Error opening output file: " << outputFileName << "\n";
+        return;
+    }
+
+    out << "#SubmissionId,ReviewerId,Match\n";
 
     for (const auto &a : assignments) {
-        out << a.submissionId << "," << a.reviewerId << "\n";
+        out << a.submissionId << ", " << a.reviewerId << ", " << a.match << "\n";
+    }
+
+    out << "#ReviewerId,SubmissionId,Match\n";
+
+    for (const auto &a : assignments) {
+        out << a.reviewerId << ", " << a.submissionId << ", " << a.match << "\n";
     }
 
     out << "#Total: " << assignments.size() << "\n";
+
+    if (!missing.empty()) {
+        out << "#SubmissionId,Domain,MissingReviews\n";
+
+        for (const auto &entry : missing) {
+            out << entry.submissionId << ", " << entry.domain << ", " << entry.missing << "\n";
+        }
+    }
 
     out.close();
 
