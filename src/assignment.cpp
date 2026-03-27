@@ -3,8 +3,28 @@
 #include <iostream>
 #include <fstream>
 #include <algorithm>
+#include <filesystem>
 
 using namespace std;
+namespace fs = std::filesystem;
+
+static fs::path resolveOutputPath(const string &outputFileName) {
+    fs::path outputPath(outputFileName);
+    if (outputPath.is_absolute()) {
+        return outputPath;
+    }
+
+    fs::path current = fs::current_path();
+    if (fs::exists(current / "data")) {
+        return current / outputPath;
+    }
+
+    if (fs::exists(current.parent_path() / "data")) {
+        return current.parent_path() / outputPath;
+    }
+
+    return current / outputPath;
+}
 
 static int solvePrimaryFlow(const vector<Submission> &subs,const vector<Reviewer> &revs,
                             int minReviews,int maxReviews,int excludedReviewerIndex,
@@ -119,10 +139,11 @@ void primaryAssignments(vector<Submission> &subs,vector<Reviewer> &revs,const ma
  */
 void writeAssignments(const vector<Assignment> &assignments,const string &outputFileName,
                       const vector<MissingReviews> &missing) {
-    ofstream out(outputFileName);
+    fs::path resolvedOutputPath = resolveOutputPath(outputFileName);
+    ofstream out(resolvedOutputPath);
 
     if (!out.is_open()) {
-        cerr << "Error opening output file: " << outputFileName << "\n";
+        cerr << "Error opening output file: " << resolvedOutputPath.string() << "\n";
         return;
     }
 
@@ -150,7 +171,7 @@ void writeAssignments(const vector<Assignment> &assignments,const string &output
 
     out.close();
 
-    cout << "Assignments written to " << outputFileName << endl;
+    cout << "Assignments written to " << resolvedOutputPath.string() << endl;
 }
 
 bool analyzeReviewerRisk(const vector<Submission> &subs,const vector<Reviewer> &revs,
@@ -189,10 +210,11 @@ bool analyzeReviewerRisk(const vector<Submission> &subs,const vector<Reviewer> &
 }
 
 void writeRiskAnalysis(const vector<RiskResult> &criticalReviewers,const string &outputFileName) {
-    ofstream out(outputFileName);
+    fs::path resolvedOutputPath = resolveOutputPath(outputFileName);
+    ofstream out(resolvedOutputPath);
 
     if (!out.is_open()) {
-        cerr << "Error opening risk output file: " << outputFileName << "\n";
+        cerr << "Error opening risk output file: " << resolvedOutputPath.string() << "\n";
         return;
     }
 
@@ -211,5 +233,5 @@ void writeRiskAnalysis(const vector<RiskResult> &criticalReviewers,const string 
     }
 
     out.close();
-    cout << "Risk analysis written to " << outputFileName << endl;
+    cout << "Risk analysis written to " << resolvedOutputPath.string() << endl;
 }
