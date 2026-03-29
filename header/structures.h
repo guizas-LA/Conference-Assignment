@@ -3,6 +3,10 @@
 #include <string>
 using namespace std;
 
+/**
+ * @struct Submission
+ * @brief Stores the relevant information of a paper submission.
+ */
 struct Submission {
     int id;
     string title;
@@ -12,6 +16,10 @@ struct Submission {
     int secondary;
 };
 
+/**
+ * @struct Reviewer
+ * @brief Stores the relevant information of a reviewer and their expertise domains.
+ */
 struct Reviewer {
     int id;
     string name;

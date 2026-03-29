@@ -2,6 +2,10 @@
 #include <iostream>
 using namespace std;
 
+/**
+ * @brief Displays all loaded submissions.
+ * @param subs Vector of submissions.
+ */
 void showSubmissions(const vector<Submission> &subs) {
     cout << "=======================================\n";
     cout << "|              Submissions            |\n";
@@ -23,6 +27,10 @@ void showSubmissions(const vector<Submission> &subs) {
     }
 }
 
+/**
+ * @brief Displays all loaded reviewers.
+ * @param revs Vector of reviewers.
+ */
 void showReviewers(const vector<Reviewer> &revs) {
     cout << "=======================================\n";
     cout << "|               Reviewers             |\n";
@@ -43,6 +51,10 @@ void showReviewers(const vector<Reviewer> &revs) {
     }
 }
 
+/**
+ * @brief Displays all loaded parameters and control values.
+ * @param params Parsed parameter map.
+ */
 void showParameters(const map<string,string> &params) {
     cout << "=======================================\n";
     cout << "|              Parameters             |\n";

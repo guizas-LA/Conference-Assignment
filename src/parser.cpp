@@ -3,15 +3,26 @@
 #include <fstream>
 #include <sstream>
 #include <iostream>
+#include <set>
 using namespace std;
 namespace fs = std::filesystem;
 
+/**
+ * @brief Removes leading and trailing whitespace from a string.
+ * @param s String to normalize.
+ * @return Trimmed string.
+ */
 string trim(string s) {
     s.erase(0, s.find_first_not_of(" \t\r\n"));
     s.erase(s.find_last_not_of(" \t\r\n") + 1);
     return s;
 }
 
+/**
+ * @brief Removes surrounding quotes from a CSV field when present.
+ * @param s Raw field string.
+ * @return Unquoted field value.
+ */
 static string stripQuotes(string s) {
     s = trim(s);
     if (s.size() >= 2 && s.front() == '"' && s.back() == '"') {
@@ -20,6 +31,12 @@ static string stripQuotes(string s) {
     return s;
 }
 
+/**
+ * @brief Splits a CSV line using a delimiter.
+ * @param line Input line.
+ * @param delimiter Separator character.
+ * @return Vector with the parsed fields.
+ */
 vector<string> split(const string &line, char delimiter) {
     vector<string> parts;
     string part;
@@ -32,6 +49,84 @@ vector<string> split(const string &line, char delimiter) {
     }
 
     return parts;
+}
+
+/**
+ * @brief Checks whether a required parameter exists in the parameter map.
+ * @param parameters Parsed parameters.
+ * @param key Parameter name.
+ * @return true if the parameter exists, false otherwise.
+ */
+static bool requireParameter(const map<string, string> &parameters, const string &key) {
+    return parameters.find(key) != parameters.end();
+}
+
+/**
+ * @brief Validates the parsed dataset control parameters.
+ * @param submissions Parsed submissions.
+ * @param reviewers Parsed reviewers.
+ * @param parameters Parsed parameters.
+ * @return true if the dataset is valid, false otherwise.
+ */
+static bool validateParameters(const vector<Submission> &submissions,
+                               const vector<Reviewer> &reviewers,
+                               const map<string, string> &parameters) {
+    const vector<string> requiredKeys = {
+            "MinReviewsPerSubmission",
+            "MaxReviewsPerReviewer",
+            "GenerateAssignments",
+            "RiskAnalysis"
+    };
+
+    for (const auto &key : requiredKeys) {
+        if (!requireParameter(parameters, key)) {
+            cerr << "Missing required parameter: " << key << "\n";
+            return false;
+        }
+    }
+
+    try {
+        int minReviews = stoi(parameters.at("MinReviewsPerSubmission"));
+        int maxReviews = stoi(parameters.at("MaxReviewsPerReviewer"));
+        int generateAssignments = stoi(parameters.at("GenerateAssignments"));
+        int riskAnalysis = stoi(parameters.at("RiskAnalysis"));
+
+        if (minReviews <= 0) {
+            cerr << "MinReviewsPerSubmission must be greater than 0.\n";
+            return false;
+        }
+
+        if (maxReviews <= 0) {
+            cerr << "MaxReviewsPerReviewer must be greater than 0.\n";
+            return false;
+        }
+
+        if (generateAssignments < 0 || generateAssignments > 3) {
+            cerr << "GenerateAssignments must be between 0 and 3.\n";
+            return false;
+        }
+
+        if (riskAnalysis < 0 || riskAnalysis > static_cast<int>(reviewers.size())) {
+            cerr << "RiskAnalysis must be between 0 and the number of reviewers.\n";
+            return false;
+        }
+    }
+    catch (const exception &e) {
+        cerr << "Invalid numeric parameter value. Reason: " << e.what() << "\n";
+        return false;
+    }
+
+    if (submissions.empty()) {
+        cerr << "Dataset must contain at least one submission.\n";
+        return false;
+    }
+
+    if (reviewers.empty()) {
+        cerr << "Dataset must contain at least one reviewer.\n";
+        return false;
+    }
+
+    return true;
 }
 
 bool readFile(const string &filename,vector<Submission> &submissions,vector<Reviewer> &reviewers,map<string, string> &parameters) {
@@ -75,9 +170,10 @@ bool readFile(const string &filename,vector<Submission> &submissions,vector<Revi
 
     string line;
     string section = "";
+    set<int> submissionIds;
+    set<int> reviewerIds;
 
     while (getline(file, line)) {
-
         line = trim(line);
 
         if (line.empty()) continue;
@@ -93,6 +189,12 @@ bool readFile(const string &filename,vector<Submission> &submissions,vector<Revi
         if (line.find("#Parameters") != string::npos) {
             section = "parameters";
             continue;
+        }
+
+        size_t commentPos = line.find('#');
+        if (commentPos != string::npos) {
+            line = trim(line.substr(0, commentPos));
+            if (line.empty()) continue;
         }
 
         if (line[0] == '#') continue;
@@ -122,6 +224,11 @@ bool readFile(const string &filename,vector<Submission> &submissions,vector<Revi
                     s.secondary = -1;
                 }
 
+                if (!submissionIds.insert(s.id).second) {
+                    cerr << "Duplicate submission id: " << s.id << "\n";
+                    return false;
+                }
+
                 submissions.push_back(s);
             }
             else if (section == "reviewers") {
@@ -138,6 +245,11 @@ bool readFile(const string &filename,vector<Submission> &submissions,vector<Revi
                     r.secondary = stoi(parts[4]);
                 } else {
                     r.secondary = -1;
+                }
+
+                if (!reviewerIds.insert(r.id).second) {
+                    cerr << "Duplicate reviewer id: " << r.id << "\n";
+                    return false;
                 }
 
                 reviewers.push_back(r);
@@ -157,5 +269,5 @@ bool readFile(const string &filename,vector<Submission> &submissions,vector<Revi
     }
 
     file.close();
-    return true;
+    return validateParameters(submissions, reviewers, parameters);
 }

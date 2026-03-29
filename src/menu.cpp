@@ -6,6 +6,9 @@
 #include "../header/show.h"
 using namespace std;
 
+/**
+ * @brief Runs the interactive text menu of the application.
+ */
 void menu() {
     int option;
     vector<Submission> submissions;
@@ -80,23 +83,54 @@ void menu() {
                     cout << "Load a dataset first!\n";
                 }
                 else {
-                    vector<RiskResult> criticalReviewers;
-                    bool baseFeasible = analyzeReviewerRisk(submissions, reviewers, parameters, criticalReviewers);
-
-                    if (!baseFeasible) {
-                        cout << "Base assignment is already infeasible, so reviewer failure risk is not analyzed.\n";
+                    int riskLevel = 0;
+                    if (parameters.count("RiskAnalysis")) {
+                        riskLevel = stoi(parameters.at("RiskAnalysis"));
                     }
-                    else if (criticalReviewers.empty()) {
-                        cout << "No single reviewer failure makes the assignment infeasible.\n";
+
+                    if (riskLevel <= 1) {
+                        vector<RiskResult> criticalReviewers;
+                        bool baseFeasible = analyzeReviewerRisk(submissions, reviewers, parameters, criticalReviewers);
+
+                        if (!baseFeasible) {
+                            cout << "Base assignment is already infeasible, so reviewer failure risk is not analyzed.\n";
+                        }
+                        else if (criticalReviewers.empty()) {
+                            cout << "No single reviewer failure makes the assignment infeasible.\n";
+                        }
+                        else {
+                            cout << "Critical reviewers found:\n";
+                            for (const auto &risk : criticalReviewers) {
+                                cout << "Reviewer " << risk.reviewerId << " is critical.\n";
+                                for (const auto &entry : risk.missing) {
+                                    cout << "  Submission " << entry.submissionId
+                                         << " would still need " << entry.missing
+                                         << " review(s) in domain " << entry.domain << ".\n";
+                                }
+                            }
+                        }
                     }
                     else {
-                        cout << "Critical reviewers found:\n";
-                        for (const auto &risk : criticalReviewers) {
-                            cout << "Reviewer " << risk.reviewerId << " is critical.\n";
-                            for (const auto &entry : risk.missing) {
-                                cout << "  Submission " << entry.submissionId
-                                     << " would still need " << entry.missing
-                                     << " review(s) in domain " << entry.domain << ".\n";
+                        vector<vector<int>> criticalReviewerSets;
+                        bool baseFeasible = analyzeReviewerRisk(submissions, reviewers, parameters,
+                                                                riskLevel, criticalReviewerSets);
+
+                        if (!baseFeasible) {
+                            cout << "Base assignment is already infeasible, so reviewer failure risk is not analyzed.\n";
+                        }
+                        else if (criticalReviewerSets.empty()) {
+                            cout << "No set of " << riskLevel
+                                 << " reviewers makes the assignment infeasible.\n";
+                        }
+                        else {
+                            cout << "Critical reviewer sets found:\n";
+                            for (const auto &reviewerSet : criticalReviewerSets) {
+                                cout << "Reviewers ";
+                                for (size_t i = 0; i < reviewerSet.size(); i++) {
+                                    if (i > 0) cout << ", ";
+                                    cout << reviewerSet[i];
+                                }
+                                cout << " are critical together.\n";
                             }
                         }
                     }

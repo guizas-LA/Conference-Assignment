@@ -8,6 +8,12 @@
 using namespace std;
 namespace fs = std::filesystem;
 
+/**
+ * @brief Checks whether a control value is enabled.
+ * @param params Parameter map.
+ * @param key Parameter name.
+ * @return true when the parameter exists and evaluates to a non-zero value.
+ */
 static bool controlFlagEnabled(const map<string,string> &params, const string &key) {
     auto it = params.find(key);
     if (it == params.end()) return false;
@@ -20,6 +26,23 @@ static bool controlFlagEnabled(const map<string,string> &params, const string &k
     }
 }
 
+/**
+ * @brief Parses an integer control parameter from the dataset.
+ * @param params Parameter map.
+ * @param key Parameter name.
+ * @return Integer value, or 0 when missing or invalid.
+ */
+static int controlValue(const map<string,string> &params, const string &key) {
+    auto it = params.find(key);
+    if (it == params.end()) return 0;
+
+    try {
+        return stoi(it->second);
+    }
+    catch (...) {
+        return 0;
+    }
+}
 
 void batchMode(string inputFile, string riskFile) {
     vector<Submission> subs;
@@ -38,29 +61,42 @@ void batchMode(string inputFile, string riskFile) {
         return;
     }
 
-    bool generateAssignments = controlFlagEnabled(params, "GenerateAssignments");
-    bool runRiskAnalysis = controlFlagEnabled(params, "RiskAnalysis");
+    int generateAssignments = controlValue(params, "GenerateAssignments");
+    int riskAnalysis = controlValue(params, "RiskAnalysis");
 
-    if (generateAssignments) {
+    if (generateAssignments != 0) {
         vector<Assignment> assignments;
         vector<MissingReviews> missing;
         primaryAssignments(subs, revs, params, assignments, missing);
         writeAssignments(out, assignments, missing);
     }
 
-    if (runRiskAnalysis) {
-        if (generateAssignments) {
+    if (riskAnalysis != 0) {
+        if (generateAssignments != 0) {
             out << "\n";
         }
 
-        vector<RiskResult> criticalReviewers;
-        bool baseFeasible = analyzeReviewerRisk(subs, revs, params, criticalReviewers);
+        if (riskAnalysis == 1) {
+            vector<RiskResult> criticalReviewers;
+            bool baseFeasible = analyzeReviewerRisk(subs, revs, params, criticalReviewers);
 
-        if (!baseFeasible) {
-            out << "#BaseAssignmentInfeasible\n";
+            if (!baseFeasible) {
+                out << "#BaseAssignmentInfeasible\n";
+            }
+            else {
+                writeRiskAnalysis(out, criticalReviewers);
+            }
         }
         else {
-            writeRiskAnalysis(out, criticalReviewers);
+            vector<vector<int>> criticalReviewerSets;
+            bool baseFeasible = analyzeReviewerRisk(subs, revs, params, riskAnalysis, criticalReviewerSets);
+
+            if (!baseFeasible) {
+                out << "#BaseAssignmentInfeasible\n";
+            }
+            else {
+                writeRiskAnalysis(out, riskAnalysis, criticalReviewerSets);
+            }
         }
     }
 
