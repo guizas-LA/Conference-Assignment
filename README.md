@@ -3,7 +3,7 @@
 
 ## Project Structure
 ```text
-1proj/
+proj/
 ├── dataset/                  # Input datasets 
 ├── header/                   # Header files
 ├── src/                      # Implementation files

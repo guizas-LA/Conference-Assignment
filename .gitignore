@@ -25,3 +25,9 @@ Thumbs.db
 *.exe
 *.out
 *.app
+
+# --- Doxygen Output ---
+html/
+latex/
+docs/
+doxygen_sqlite3.db
