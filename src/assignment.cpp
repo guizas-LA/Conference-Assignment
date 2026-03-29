@@ -124,6 +124,14 @@ void writeAssignments(const vector<Assignment> &assignments,const string &output
         return;
     }
 
+    writeAssignments(out, assignments, missing);
+    out.close();
+
+    cout << "Assignments written to " << resolvedOutputPath.string() << endl;
+}
+
+void writeAssignments(ostream &out,const vector<Assignment> &assignments,
+                      const vector<MissingReviews> &missing) {
     out << "#SubmissionId,ReviewerId,Match\n";
 
     for (const auto &a : assignments) {
@@ -145,10 +153,6 @@ void writeAssignments(const vector<Assignment> &assignments,const string &output
             out << entry.submissionId << ", " << entry.domain << ", " << entry.missing << "\n";
         }
     }
-
-    out.close();
-
-    cout << "Assignments written to " << resolvedOutputPath.string() << endl;
 }
 
 bool analyzeReviewerRisk(const vector<Submission> &subs,const vector<Reviewer> &revs,
@@ -187,7 +191,7 @@ bool analyzeReviewerRisk(const vector<Submission> &subs,const vector<Reviewer> &
 }
 
 void writeRiskAnalysis(const vector<RiskResult> &criticalReviewers,const string &outputFileName) {
-    fs::path resolvedOutputPath(resolveDatasetPath(outputFileName, "risk"));
+    fs::path resolvedOutputPath(resolveDatasetPath(outputFileName, "output"));
     ofstream out(resolvedOutputPath);
 
     if (!out.is_open()) {
@@ -195,20 +199,22 @@ void writeRiskAnalysis(const vector<RiskResult> &criticalReviewers,const string 
         return;
     }
 
-    out << "#CriticalReviewerId,SubmissionId,Domain,MissingReviews\n";
-
-    if (criticalReviewers.empty()) {
-        out << "#None\n";
-    }
-    else {
-        for (const auto &risk : criticalReviewers) {
-            for (const auto &entry : risk.missing) {
-                out << risk.reviewerId << ", " << entry.submissionId << ", "
-                    << entry.domain << ", " << entry.missing << "\n";
-            }
-        }
-    }
-
+    writeRiskAnalysis(out, criticalReviewers);
     out.close();
     cout << "Risk analysis written to " << resolvedOutputPath.string() << endl;
+}
+
+void writeRiskAnalysis(ostream &out,const vector<RiskResult> &criticalReviewers) {
+    out << "#Risk Analysis: 1\n";
+
+    if (criticalReviewers.empty()) {
+        out << "\n";
+    }
+    else {
+        for (size_t i = 0; i < criticalReviewers.size(); i++) {
+            if (i > 0) out << ", ";
+            out << criticalReviewers[i].reviewerId;
+        }
+        out << "\n";
+    }
 }

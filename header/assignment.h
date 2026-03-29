@@ -5,6 +5,7 @@
 #include <vector>
 #include <map>
 #include <string>
+#include <iosfwd>
 
 using namespace std;
 
@@ -55,12 +56,17 @@ void primaryAssignments(vector<Submission> &subs,vector<Reviewer> &revs,const ma
 void writeAssignments(const vector<Assignment> &assignments,const string &outputFileName,
                       const vector<MissingReviews> &missing);
 
+void writeAssignments(ostream &out,const vector<Assignment> &assignments,
+                      const vector<MissingReviews> &missing);
+
 string resolveDatasetPath(const string &fileName, const string &folderName);
 
 bool analyzeReviewerRisk(const vector<Submission> &subs,const vector<Reviewer> &revs,
                          const map<string,string> &params,vector<RiskResult> &criticalReviewers);
 
 void writeRiskAnalysis(const vector<RiskResult> &criticalReviewers,const string &outputFileName);
+
+void writeRiskAnalysis(ostream &out,const vector<RiskResult> &criticalReviewers);
 
 
 #endif //PROJECT_ASSIGNMENT_H
