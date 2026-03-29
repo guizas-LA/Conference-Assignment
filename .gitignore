@@ -1,0 +1,19 @@
+# --- Build Systems ---
+cmake-build-debug/
+cmake-build-release/
+CMakeCache.txt
+CMakeFiles/
+Makefile
+cmake_install.cmake
+
+# --- IDEs & Editors ---
+# VS Code
+.vscode/
+# JetBrains / CLion
+.idea/
+*.swp
+*.swo
+
+# --- OS generated files ---
+.DS_Store
+Thumbs.db
