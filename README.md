@@ -10,6 +10,7 @@ proj/
 ├── build/                    # CMake build output
 ├── build/                    # CMake build output
 ├── CMakeLists.txt            # Build configuration
+├── QUESTOES_RESOLVIDAS.md    # Answers for T2.3 and T2.4
 ├── README.md                 # Project overview
 └── .gitignore                # Git ignore rules
 ```
