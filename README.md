@@ -1,4 +1,4 @@
-# DA-Proj1
+# Conference Assignment Tool
 
 
 ## Project Structure
